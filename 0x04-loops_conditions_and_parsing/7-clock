@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#Displays time up to 12 hrs and minutes up to 59
+minute=1
+hour=0
+echo 'Hour: '$hour
+hour=1
+while [ $hour -lt 13 ]
+do
+    if [ $minute -lt 60 ]
+    then
+	echo $minute
+    else
+	echo 'Hour: '$hour
+	let hour+=1
+	minute=0
+    fi
+    let minute+=1
+done
+while [ $minute -lt 60 ]
+do
+    echo $minute
+    let minute+=1
+done

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#Prints list of content in  current dir
+for i in *
+do
+    echo "$i" | cut -d'-' -f2
+done
