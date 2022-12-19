@@ -1,22 +1,20 @@
 #!/usr/bin/env bash
-# Installs HAProxy version 1.8 with the following configurations:
-#+    Enables management via the init script.
-#+    Distributes requests using a round-robin algorithm.
-
-apt-get update
-apt-get install -y haproxy
-
-printf %s "
-frontend hbnb-lb_front
-        bind *:80
-        mode http
-        default_backend hbnb-lb_back
-backend hbnb-lb_back
-        balance roundrobin
-        server 64617-web-01 52.201.219.192:80 check
-        server 64617-web-02 100.25.143.187:80 check
-" >> /etc/haproxy/haproxy.cfg
-
-echo "ENABLED=1" >> /etc/default/haproxy
-
-service haproxy start
+# Install your load balancer
+# update local package repo
+sudo apt-get update
+# install haproxy
+sudo apt-get install haproxy -y
+config="
+frontend plotterwave
+    bind *:80
+    mode http
+    default_backend plotterwave_backend
+backend plotterwave_backend
+    balance roundrobin
+    server 64617-web-01 52.201.219.192:80 check
+    server 64617-web-02 100.25.143.187:80 check
+"
+sudo chown -R "$USER":"$USER" /etc/haproxy/
+echo "$config" >> /etc/haproxy/haproxy.cfg
+# restart service
+sudo service haproxy restart
