@@ -1,22 +1,22 @@
-# automate the task of creating a custom HTTP header response
-
-exec {'sudo chown -R':
-  command => "/usr/bin/sudo /bin/chown -R ${id}:${id} /etc/nginx/sites-available/"
+# Install Nginx
+package { 'nginx':
+  ensure => present,
 }
 
-exec {'sudo service nginx':
-  command => '/usr/bin/sudo /usr/sbin/service nginx restart'
+# Create a custom configuration file for Nginx
+file { '/etc/nginx/conf.d/custom_http_response_header.conf':
+  ensure  => file,
+  content => 'server {
+    listen 80;
+    server_name _;
+
+    add_header X-Served-By $hostname;
+}',
+  notify  => Service['nginx'],
 }
 
-file {'/etc/nginx/sites-available/default':
-  ensure => 'file'
-}
-
--> file_line{'X-Served-By':
-  ensure  => 'present',
-  path    => '/etc/nginx/sites-available/default',
-  line    => '    server_name _;
-    add_header X-Served-By $hostname;',
-  match   => 'server_name _;',
-  require => Exec['sudo service nginx']
+# Restart Nginx to apply the changes
+service { 'nginx':
+  ensure => running,
+  enable => true,
 }
