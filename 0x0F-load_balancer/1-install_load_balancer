@@ -1,23 +1,47 @@
 #!/usr/bin/env bash
-# Install your load balancer
-# update local package repo
+# Update package list
 sudo apt-get update
-# install haproxy
+
+# Install HAproxy
 sudo apt-get install haproxy
-config="
-frontend http
+
+# Configure HAproxy to send traffic to web-01 and web-02 using a roundrobin algorithm
+sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
+global
+    log /dev/log    local0
+    log /dev/log    local1 notice
+    daemon
+    maxconn 4096
+    user haproxy
+    group haproxy
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+
+frontend http-in
     bind *:80
     default_backend servers
+
 backend servers
-    balance roundrobin
-    server 64617-web-01 52.201.219.192:80 check
-    server 64617-web-02 100.25.143.187:80 check
-"
-sudo chown -R "$USER":"$USER" /etc/haproxy/
-echo "$config" >> /etc/haproxy/haproxy.cfg
-#enable HAproxy
+    server 64617-web-01 52.201.219.192:80 maxconn 32
+    server 64617-web-02 100.25.143.187:80 maxconn 32
+
+EOF'
+
+# Enable the HAproxy init script
 sudo update-rc.d haproxy enable
-start HQproxy service
+
+# Start the HAproxy service
 sudo service haproxy start
-# restart service
+
+# Verify that HAproxy is running and configured correctly
+sudo service haproxy status
+
+# Restart HAproxy to make the changes permanent
 sudo service haproxy restart
