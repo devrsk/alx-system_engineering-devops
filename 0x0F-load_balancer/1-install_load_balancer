@@ -1,47 +1,43 @@
-#!/usr/bin/env bash
-# Update package list
+#!/bin/bash
+
+# Install HAProxy
 sudo apt-get update
+sudo apt-get install -y haproxy
 
-# Install HAproxy
-sudo apt-get install haproxy
-
-# Configure HAproxy to send traffic to web-01 and web-02 using a roundrobin algorithm
-sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
+# Create the HAProxy configuration file
+cat << EOF > /etc/haproxy/haproxy.cfg
 global
-    log /dev/log    local0
-    log /dev/log    local1 notice
     daemon
-    maxconn 4096
-    user haproxy
-    group haproxy
+    maxconn 256
 
 defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
-    timeout connect 5000
-    timeout client  50000
-    timeout server  50000
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
 
 frontend http-in
     bind *:80
     default_backend servers
 
 backend servers
-    server 64617-web-01 52.201.219.192:80 maxconn 32
-    server 64617-web-02 100.25.143.187:80 maxconn 32
+    balance roundrobin
+    server web-01 64617-web-01:80 check
+    server web-02 64617-web-02:80 check
 
-EOF'
+EOF
+
+# Set the hostnames of the servers
+echo "64617-web-01" > /etc/hostname
+hostname -F /etc/hostname
+echo "52.201.219.192 64617-web-01" >> /etc/hosts
+echo "100.25.143.187 64617-web-02" >> /etc/hosts
 
 # Enable the HAproxy init script
 sudo update-rc.d haproxy enable
 
-# Start the HAproxy service
-sudo service haproxy start
+# Start the HAProxy service
+sudo systemctl start haproxy
 
-# Verify that HAproxy is running and configured correctly
-sudo service haproxy status
-
-# Restart HAproxy to make the changes permanent
-sudo service haproxy restart
+# Enable the HAProxy service to start on boot
+sudo systemctl enable haproxy
