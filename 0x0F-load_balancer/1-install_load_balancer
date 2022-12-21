@@ -5,31 +5,30 @@ sudo apt-get update
 sudo apt-get install -y haproxy
 
 # Create the HAProxy configuration files
-sudo cat << EOF > /etc/haproxy/haproxy.cfg
+sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
 global
     log /dev/log    local0
     log /dev/log    local1 notice
     daemon
     maxconn 4096
     user haproxy
-
-
+    group haproxy
 defaults
-    mode http
-    timeout connect 5000ms
-    timeout client 50000ms
-    timeout server 50000ms
-
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
 frontend http-in
     bind *:80
     default_backend servers
-
 backend servers
     balance roundrobin
     server 64617-web-01 52.201.219.192:80 check
     server 64617-web-02 100.25.143.187:80 check
-
-EOF
+EOF'
 
 # Set the hostnames of the servers
 sudo echo "64617-web-01" > /etc/hostname
