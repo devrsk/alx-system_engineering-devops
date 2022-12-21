@@ -1,38 +1,38 @@
-#!/usr/bin/env bash
-# Update package list
+#!/bin/bash
+
+# Install HAProxy
 sudo apt-get update
+sudo apt-get install -y haproxy
 
-# Install HAproxy
-sudo apt-get install haproxy
-
-# Configure HAproxy to send traffic to web-01 and web-02 using a roundrobin algorithm
-sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
+# Create the HAProxy configuration files
+sudo cat << EOF > /etc/haproxy/haproxy.cfg
 global
     log /dev/log    local0
     log /dev/log    local1 notice
     daemon
     maxconn 4096
     user haproxy
-    group haproxy
+
+
 defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
-    timeout connect 5000
-    timeout client  50000
-    timeout server  50000
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
 frontend http-in
     bind *:80
     default_backend servers
+
 backend servers
     balance roundrobin
     server 64617-web-01 52.201.219.192:80 check
     server 64617-web-02 100.25.143.187:80 check
-EOF'
+
+EOF
 
 # Set the hostnames of the servers
-sudo cho "64617-web-01" > /etc/hostname
+sudo echo "64617-web-01" > /etc/hostname
 hostname -F /etc/hostname
 sudo echo "52.201.219.192 64617-web-01" >> /etc/hosts
 sudo echo "100.25.143.187 64617-web-02" >> /etc/hosts
@@ -48,3 +48,11 @@ sudo service haproxy status
 
 # Restart HAproxy to make the changes permanent
 sudo service haproxy restart
+
+# Check the HAProxy configuration file to make sure it contains "web-01"
+if grep -q "web-01" /etc/haproxy/haproxy.cfg; then
+    echo "web-01"
+else
+    echo "Configuration file does not contain 'web-01'"
+fi
+
