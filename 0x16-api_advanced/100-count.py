@@ -1,61 +1,63 @@
 #!/usr/bin/python3
-""" Count it! """
+""" Module for storing the count_words function. """
 from requests import get
 
-REDDIT = "https://www.reddit.com/"
-HEADERS = {'user-agent': 'my-app/0.0.1'}
 
+def count_words(subreddit, word_list, word_count=[], page_after=None):
+    """
+    Prints the count of the given words present in the title of the
+    subreddit's hottest articles.
+    """
+    headers = {'User-Agent': 'HolbertonSchool'}
 
-def count_words(subreddit, word_list, after="", word_dic={}):
-    """
-    Returns a list containing the titles of all hot articles for a
-    given subreddit. If no results are found for the given subreddit,
-    the function should return None.
-    """
-    if not word_dic:
+    word_list = [word.lower() for word in word_list]
+
+    if bool(word_count) is False:
         for word in word_list:
-            word_dic[word] = 0
+            word_count.append(0)
 
-    if after is None:
-        word_list = [[key, value] for key, value in word_dic.items()]
-        word_list = sorted(word_list, key=lambda x: (-x[1], x[0]))
-        for w in word_list:
-            if w[1]:
-                print("{}: {}".format(w[0].lower(), w[1]))
-        return None
+    if page_after is None:
+        url = 'https://www.reddit.com/r/{}/hot.json'.format(subreddit)
+        r = get(url, headers=headers, allow_redirects=False)
+        if r.status_code == 200:
+            for child in r.json()['data']['children']:
+                i = 0
+                for i in range(len(word_list)):
+                    for word in [w for w in child['data']['title'].split()]:
+                        word = word.lower()
+                        if word_list[i] == word:
+                            word_count[i] += 1
+                    i += 1
 
-    url = REDDIT + "r/{}/hot/.json".format(subreddit)
+            if r.json()['data']['after'] is not None:
+                count_words(subreddit, word_list,
+                            word_count, r.json()['data']['after'])
+    else:
+        url = ('https://www.reddit.com/r/{}/hot.json?after={}'
+               .format(subreddit,
+                       page_after))
+        r = get(url, headers=headers, allow_redirects=False)
 
-    params = {
-        'limit': 100,
-        'after': after
-    }
+        if r.status_code == 200:
+            for child in r.json()['data']['children']:
+                i = 0
+                for i in range(len(word_list)):
+                    for word in [w for w in child['data']['title'].split()]:
+                        word = word.lower()
+                        if word_list[i] == word:
+                            word_count[i] += 1
+                    i += 1
+            if r.json()['data']['after'] is not None:
+                count_words(subreddit, word_list,
+                            word_count, r.json()['data']['after'])
+            else:
+                dicto = {}
+                for key_word in list(set(word_list)):
+                    i = word_list.index(key_word)
+                    if word_count[i] != 0:
+                        dicto[word_list[i]] = (word_count[i] *
+                                               word_list.count(word_list[i]))
 
-    r = get(url, headers=HEADERS, params=params, allow_redirects=False)
-
-    if r.status_code != 200:
-        return None
-
-    try:
-        js = r.json()
-
-    except ValueError:
-        return None
-
-    try:
-
-        data = js.get("data")
-        after = data.get("after")
-        children = data.get("children")
-        for child in children:
-            post = child.get("data")
-            title = post.get("title")
-            lower = [s.lower() for s in title.split(' ')]
-
-            for w in word_list:
-                word_dic[w] += lower.count(w.lower())
-
-    except:
-        return None
-
-    count_words(subreddit, word_list, after, word_dic)
+                for key, value in sorted(dicto.items(),
+                                         key=lambda x: (-x[1], x[0])):
+                    print('{}: {}'.format(key, value))
